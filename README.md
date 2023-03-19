@@ -25,3 +25,10 @@ you may also need to install i2c-tools and confirm that the driver board is conn
 sudo apt-get install i2c-tools libi2c-dev
 sudo i2cdetect -y 1
 ```
+
+## ROS Packages Install
+assuming you want to use the camera then you'll need the usb_cam package: 
+
+```
+sudo apt-get install ros-noetic-usb-cam
+```
