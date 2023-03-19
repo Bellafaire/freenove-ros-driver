@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="freenove_three_wheel_driver" type="freenove_three_wheel_control_interface.py" name="freenove_three_wheel_control_interface" output="screen" />
+</launch>
