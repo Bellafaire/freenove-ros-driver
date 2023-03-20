@@ -4,6 +4,9 @@ import rospy
 import numpy as np
 import smbus
 from std_msgs.msg import Float32
+import tf2_ros
+import geometry_msgs.msg
+import tf_conversions
 
 #i2c Addresses 
 MOTOR_ADDR = 0x18  #motor driver
@@ -37,16 +40,64 @@ class FreenoveThreeWheeledControl:
 
         # self.test_servos_and_motors()
 
+        #list of transforms we're going to publish       
+        #frame, x,y,z,yaw
+        self.tf_info = [["fl_wheel", 0.09, 0.08, 0, 0], 
+                        ["fr_wheel", 0.09, -0.08, 0, 0], 
+                        ["camera_platform", 0.09, 0, 0.03, 0]] 
+
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster()
+        self.update_tf()
+
         rospy.Subscriber("motor_drive", Float32, self.drive_callback)
         rospy.Subscriber("servo_1", Float32, self.servo0_callback)
         rospy.Subscriber("servo_2", Float32, self.servo1_callback)
         rospy.Subscriber("servo_3", Float32, self.servo2_callback)
         rospy.Subscriber("servo_4", Float32, self.servo3_callback)
-        
+        rospy.Timer(rospy.Duration(0.1), self.timer_callback)
+
+
+    def timer_callback(self, msg): 
+        self.update_tf()
+    
+    def update_tf(self): 
+        for i, a in enumerate(self.tf_info): 
+            t = geometry_msgs.msg.TransformStamped()
+
+            t.header.stamp = rospy.Time.now()
+            t.header.frame_id = "base_link"
+            t.child_frame_id = a[0]
+            t.transform.translation.x = a[1]
+            t.transform.translation.y = a[2]
+            t.transform.translation.z = a[3]
+
+            #servos max out around 45 degrees
+            q = tf_conversions.transformations.quaternion_from_euler(0, 0, a[4] )
+            t.transform.rotation.x = q[0]
+            t.transform.rotation.y = q[1]
+            t.transform.rotation.z = q[2]
+            t.transform.rotation.w = q[3]
+
+            self.tf_broadcaster.sendTransform(t)
+
+            # rospy.loginfo("Publishing tf %s" % t)
+    
+    def set_frame_rotation(self, frame, rotation): 
+        for i, a in enumerate(self.tf_info): 
+            if a[0] == frame: 
+                self.tf_info[i][4] = rotation
+                self.update_tf()
+                return 
+        rospy.logwarn("freenove_three_wheel_control_interface.py: frameid %s is not tracked by this file" % frame)
+
+    
     def servo0_callback(self, msg): 
+        self.set_frame_rotation("fl_wheel", (msg.data * 45.0) * np.pi / 180.0)
+        self.set_frame_rotation("fr_wheel", (msg.data * 45.0) * np.pi / 180.0)
         self.set_servo(0, msg.data)        
 
     def servo1_callback(self, msg): 
+        self.set_frame_rotation("camera_platform", (msg.data * 90) * np.pi / 180.0)
         self.set_servo(1, msg.data)        
 
     def servo2_callback(self, msg): 
