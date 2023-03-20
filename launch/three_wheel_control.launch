@@ -1,6 +1,8 @@
 <launch>
     <node pkg="freenove_three_wheel_driver" type="freenove_three_wheel_control_interface.py" name="freenove_three_wheel_control_interface" output="screen" />
     
+    <node pkg="freenove_three_wheel_driver" type="vel_cmd_controller.py" name="vel_cmd_controller" output="screen" />
+
     <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
         <param name="video_device" value="/dev/video0" />
         <param name="image_width" value="640" />

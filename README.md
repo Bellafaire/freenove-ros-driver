@@ -87,3 +87,5 @@ export ROS_IP=10.0.0.3
 Likewise here we're simply indicating that for any ROS data, we need to reach out to ```http://10.0.0.2:11311```, which we do from our own IP address
 You're now free to run any program you want on your computer and have it talk to the car. 
 You can do this to do rostopic sub/pub, rqt_graph, or launch a cool node on your computer that requires more processing power than the car has available. 
+
+If you use this method then you can write values to the ``/cmd_vel`` topic using ```rosrun rqt_robot_steering rqt_robot_steering``` for a very basic teleop control. 
