@@ -42,7 +42,4 @@ if __name__ == '__main__':
     except rospy.ROSInterruptException:
         rospy.logfatal('caught exception')
     
-    #close the serial connection so we don't run into any issues
-    node.close()
-
     rospy.loginfo('exiting')

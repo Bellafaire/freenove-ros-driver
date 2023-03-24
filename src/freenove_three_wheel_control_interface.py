@@ -42,9 +42,16 @@ class FreenoveThreeWheeledControl:
 
         #list of transforms we're going to publish       
         #frame, x,y,z,yaw
-        self.tf_info = [["fl_wheel", 0.09, 0.08, 0, 0], 
-                        ["fr_wheel", 0.09, -0.08, 0, 0], 
-                        ["camera_platform", 0.09, 0, 0.03, 0]] 
+        # self.tf_info = [["fl_wheel", 0.09, 0.08, 0, 0], 
+        #                 ["fr_wheel", 0.09, -0.08, 0, 0], 
+        #                 ["camera_platform", 0.09, 0, 0.03, 0]] 
+        self.tf_info = []
+
+        self.add_tf("fl_wheel", 0.09, 0.08, 0)
+        self.add_tf("fr_wheel", 0.09, -0.08, 0)
+        self.add_tf("horizontal_camera_platform", 0.09, 0, 0.03)
+        self.add_tf("vertical_camera_platform", 0, 0, 0.05, parent_frame="horizontal_camera_platform")
+
 
         self.tf_broadcaster = tf2_ros.TransformBroadcaster()
         self.update_tf()
@@ -56,6 +63,19 @@ class FreenoveThreeWheeledControl:
         rospy.Subscriber("servo_4", Float32, self.servo3_callback)
         rospy.Timer(rospy.Duration(0.1), self.timer_callback)
 
+    def add_tf(self, child_frame, x, y, z, roll=0, pitch=0, yaw=0, parent_frame="base_link"): 
+        self.tf_info.append(
+            { 
+             "child_frame" : child_frame, 
+             "parent_frame" : parent_frame, 
+             "x" : x, 
+             "y" : y, 
+             "z" : z, 
+             "roll" : roll, 
+             "pitch" : pitch, 
+             "yaw" : yaw
+            }
+        )
 
     def timer_callback(self, msg): 
         self.update_tf()
@@ -65,14 +85,14 @@ class FreenoveThreeWheeledControl:
             t = geometry_msgs.msg.TransformStamped()
 
             t.header.stamp = rospy.Time.now()
-            t.header.frame_id = "base_link"
-            t.child_frame_id = a[0]
-            t.transform.translation.x = a[1]
-            t.transform.translation.y = a[2]
-            t.transform.translation.z = a[3]
+            t.header.frame_id = a["parent_frame"]
+            t.child_frame_id = a["child_frame"]
+            t.transform.translation.x = a["x"]
+            t.transform.translation.y = a["y"]
+            t.transform.translation.z = a["z"]
 
             #servos max out around 45 degrees
-            q = tf_conversions.transformations.quaternion_from_euler(0, 0, a[4] )
+            q = tf_conversions.transformations.quaternion_from_euler(a["roll"], a["pitch"], a["yaw"])
             t.transform.rotation.x = q[0]
             t.transform.rotation.y = q[1]
             t.transform.rotation.z = q[2]
@@ -82,25 +102,28 @@ class FreenoveThreeWheeledControl:
 
             # rospy.loginfo("Publishing tf %s" % t)
     
-    def set_frame_rotation(self, frame, rotation): 
+    def set_frame_rotation(self, frame, roll=0, pitch=0, yaw=0): 
         for i, a in enumerate(self.tf_info): 
-            if a[0] == frame: 
-                self.tf_info[i][4] = rotation
+            if a["child_frame"] == frame: 
+                self.tf_info[i]["roll"] = roll
+                self.tf_info[i]["pitch"] = pitch
+                self.tf_info[i]["yaw"] = yaw
                 self.update_tf()
                 return 
         rospy.logwarn("freenove_three_wheel_control_interface.py: frameid %s is not tracked by this file" % frame)
 
     
     def servo0_callback(self, msg): 
-        self.set_frame_rotation("fl_wheel", (msg.data * 45.0) * np.pi / 180.0)
-        self.set_frame_rotation("fr_wheel", (msg.data * 45.0) * np.pi / 180.0)
+        self.set_frame_rotation("fl_wheel", yaw = (msg.data * 45.0) * np.pi / 180.0)
+        self.set_frame_rotation("fr_wheel", yaw = (msg.data * 45.0) * np.pi / 180.0)
         self.set_servo(0, msg.data)        
 
     def servo1_callback(self, msg): 
-        self.set_frame_rotation("camera_platform", (msg.data * 90) * np.pi / 180.0)
+        self.set_frame_rotation("horizontal_camera_platform", yaw = (msg.data * 90) * np.pi / 180.0)
         self.set_servo(1, msg.data)        
 
     def servo2_callback(self, msg): 
+        self.set_frame_rotation("vertical_camera_platform", pitch = - (msg.data * 90) * np.pi / 180.0)
         self.set_servo(2, msg.data)       
 
     def servo3_callback(self, msg): 
