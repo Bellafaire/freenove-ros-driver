@@ -23,6 +23,15 @@ class VelCmdController:
         motor = msg.linear.x
         turn = msg.angular.z
 
+        motor, vel_in_range = self.constrain_s(motor, -1, 1)
+        turn, turn_in_range = self.constrain_s(turn, -1, 1) 
+
+        if not vel_in_range: 
+            rospy.logwarn_throttle(3, "Maximum command velocity outside of range (-1, 1), clipping values")
+        
+        if not turn_in_range: 
+            rospy.logwarn_throttle(3, "Maximum turning command outside of range (-1, 1), clipping values")
+
         motor_msg = Float32()
         motor_msg.data = motor
         self.motor_pub.publish(motor_msg)
@@ -30,6 +39,14 @@ class VelCmdController:
         turn_msg = Float32()
         turn_msg.data = turn
         self.steering_pub.publish(turn_msg)
+
+    def constrain_s(self, val, min, max): 
+        if val < min: 
+            return min, False
+        elif val > max: 
+            return max, False
+        else: 
+            return val, True
 
 # initialize node when script is called
 if __name__ == '__main__':

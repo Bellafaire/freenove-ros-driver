@@ -88,4 +88,15 @@ Likewise here we're simply indicating that for any ROS data, we need to reach ou
 You're now free to run any program you want on your computer and have it talk to the car. 
 You can do this to do rostopic sub/pub, rqt_graph, or launch a cool node on your computer that requires more processing power than the car has available. 
 
-If you use this method then you can write values to the ``/cmd_vel`` topic using ```rosrun rqt_robot_steering rqt_robot_steering``` for a very basic teleop control. 
+If you use this method then you can write values to the ``/cmd_vel`` topic using ```rosrun rqt_robot_steering rqt_robot_steering``` or ```rosrun teleop_twist_keyboard teleop_twist_keyboard.py``` (see below) for a very basic teleop control. 
+
+## Keyboard Teleop
+
+If you're connected remotely or through SSH you can use the remote [teleop_twist_keyboard](http://wiki.ros.org/teleop_twist_keyboard) node which is installable through the command: 
+```
+sudo apt-get install ros-noetic-teleop-twist-keyboard
+```
+You can then launch it while roscore is running with: 
+```
+rosrun teleop_twist_keyboard teleop_twist_keyboard.py cmd_vel:=cmd_vel
+```
